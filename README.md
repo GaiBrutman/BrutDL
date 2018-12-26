@@ -4,7 +4,7 @@ A Keras-like simple deep learning library using only numpy and the python standa
 This library is inspired by the coursera deepleaning.ai Deep Learning Specialization.
 
 
-# Simple Demo
+## Simple Demo
 A simple use of the library to classify written digits:
 
 First, import the required modules.
