@@ -93,5 +93,4 @@ pred: [7 2 1 0 4 1 4 9 6 9]
 true: [7 2 1 0 4 1 4 9 5 9]
 Test Accuracy: 0.9479000000000003
 ```
-
-![Alt text](relative/path/to/img.jpg?raw=true "Title")
+![Output Of model.plot_cost()](/imgs/mnist_plot_1.png)
