@@ -64,7 +64,7 @@ Model:
 	SOFTMAX Activation Layer
 ```
 
-Lastly, train your model using the data object, get the train and test the accuracies, and plot the results of the train.
+Lastly, train your model using the data object, get the train and test accuracies, and plot the results.
 ```python
 model.train(data, lr=0.2, batch_size=64, epochs=10, lr_descent=True)
 
