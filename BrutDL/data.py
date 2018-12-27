@@ -49,7 +49,7 @@ class Data:
         if to_one_hot:
             return Data.convert_to_one_hot(arr, dim)
 
-        assert dim in arr.shape or (to_one_hot and np.max())
+        assert dim in arr.shape
         return arr.T if arr.shape[0] != dim else arr
 
     @staticmethod
