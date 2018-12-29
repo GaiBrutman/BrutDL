@@ -1,7 +1,8 @@
 from __future__ import print_function
 
 import numpy as np
-from BrutDL.layer import WeightedLayer, Activation
+from BrutDL.layer import WeightedLayer
+from BrutDL.activations import Activation, ACTIVATIONS
 
 
 class FcLayer(WeightedLayer):
@@ -16,9 +17,15 @@ class FcLayer(WeightedLayer):
         self.W = None
         self.b = None
 
-        self.activation = Activation(activation) if activation else None
-
         self.cache = None
+
+        if isinstance(activation, str):
+            assert activation in ACTIVATIONS
+            activation = ACTIVATIONS[activation]()
+
+        assert isinstance(activation, Activation) or activation is None
+
+        self.activation = activation
 
     def init_weights(self, in_dim=None):
         assert in_dim, not self.in_dim

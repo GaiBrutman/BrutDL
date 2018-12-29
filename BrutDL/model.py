@@ -1,12 +1,14 @@
 from __future__ import print_function
 
+import numpy as np
+
 import math
 
 import matplotlib.pyplot as plt
 
 from BrutDL.data import Data
-from BrutDL.layer import *
-from BrutDL.nn_utils_v1 import COST_FUNCS, LOSS_DERIV_FUNCS
+from BrutDL.costs import Cost, COSTS
+from BrutDL.layer import Layer, WeightedLayer
 
 
 class PrintModelProgress:
@@ -40,26 +42,31 @@ class PrintModelProgress:
 
 
 class Model:
-    def __init__(self, input_shape, layers=None, loss='mse'):
+    def __init__(self, input_dim, layers=None, cost='mse'):
         """
         Initialises of the class
 
         :param input_shape: the shape of the input data
         :param layers: list of model layers
-        :param loss: the loss function to use in back propagation
+        :param cost: the cost to use in back propagation
         """
 
         super(Model, self).__init__()
 
-        self.__layers_dims = [input_shape]  # List of array dimensions (int) in the model
+        self.__layers_dims = [input_dim]  # List of array dimensions (int) in the model
 
         self.__layers = []
 
         self.__activations = []  # List of activation (str) functions applied in the model
 
-        self.__loss = loss  # Loss function (str)
+        if isinstance(cost, str):
+            assert cost in COSTS
+            cost = COSTS[cost]()
 
-        self.__costs = []  # Keep track of cost
+        assert isinstance(cost, Cost)
+        self.__cost = cost  # Cost object
+
+        self.__costs = []  # Keep track of cost (list of floats)
 
         self.__last_epochs = 0  # Last number of train epochs
         self.__last_train_size = 0  # Last number of training samples
@@ -117,14 +124,14 @@ class Model:
         :return: None
         """
 
-        dAL = LOSS_DERIV_FUNCS[self.__loss](AL, Y)
+        dAL = self.__cost.derivative(AL, Y)
 
         dA = dAL
         for l in reversed(self.__layers):
             dA = l.back_prop(dA, lr)
 
     def train(self, data=None, train_data=(None, None), val_data=(None, None), lr=1e-3, epochs=7, batch_size=64,
-              verbose=True, lr_descent=False):
+              verbose=True, lr_descent=False, seed=None):
         """
         Trains the network.
 
@@ -136,8 +143,12 @@ class Model:
         :param batch_size: size of each mini-batch of data
         :param verbose: whether to print the training process
         :param lr_descent: whether to descent the learning rate throughout each epoch
+        :param seed: seed state to initialize the numpy.random generator
         :return: None
         """
+
+        if seed is not None:
+            np.random.seed(seed)
 
         assert data is not None or Data.is_valid(train_data)
 
@@ -162,7 +173,7 @@ class Model:
                 AL = self.forward(min_batch_x)
 
                 # Compute cost
-                cost, nodes_cost = COST_FUNCS[self.__loss](AL, min_batch_y)
+                cost, nodes_cost = self.__cost.compute(AL, min_batch_y, get_node_cost=True)
                 batch_cost += nodes_cost / data.n_batches
 
                 # Back propagation
@@ -182,8 +193,7 @@ class Model:
             if verbose:
                 # If validation data exists, print validation cost
                 if Data.is_valid(data.val_set):
-
-                    val_cost, _ = COST_FUNCS[self.__loss](self.forward(data.X_val), data.Y_val)
+                    val_cost = self.__cost.compute(self.forward(data.X_val), data.Y_val)
                 else:
                     val_cost = None
 
@@ -271,7 +281,7 @@ class Model:
         :return: dictionary of the model's hyper parameters.
         """
 
-        return dict(layers_dims=self.__layers_dims, activations=self.__activations, loss=self.__loss, lr=self.__last_lr,
+        return dict(layers_dims=self.__layers_dims, activations=self.__activations, cost=self.__cost, lr=self.__last_lr,
                     epoches=self.__last_epochs, accuracies=self.__accuracies)
 
     def __str__(self):
