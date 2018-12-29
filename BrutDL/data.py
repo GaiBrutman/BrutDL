@@ -64,7 +64,6 @@ class Data:
                 return False
         return True
 
-
     def mini_batches(self, batch_size=64, seed=None):
         """
         Creates a generator of random minibatches from (X_train, Y_train)

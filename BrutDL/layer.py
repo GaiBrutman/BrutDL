@@ -1,5 +1,6 @@
 from abc import abstractmethod, ABC
 
+
 class Layer(ABC):
     @abstractmethod
     def fire(self, *args, **kwargs):

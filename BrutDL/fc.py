@@ -8,7 +8,7 @@ from BrutDL.activations import Activation, ACTIVATIONS
 class FcLayer(WeightedLayer):
     def __init__(self, out_dim, activation=None):
         super(FcLayer, self).__init__()
-        
+
         assert isinstance(out_dim, int)
 
         self.in_dim = None
@@ -80,5 +80,5 @@ class FcLayer(WeightedLayer):
     def __str__(self):
         s = 'Fully Connected Layer: [%i -> %i]' % (self.in_dim, self.out_dim)
         if self.activation:
-            s += '\n\t'+str(self.activation)
+            s += '\n\t' + str(self.activation)
         return s
