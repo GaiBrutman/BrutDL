@@ -44,7 +44,7 @@ Data:
 
 Now, create your model and add as its layers, it can be done by passing them when creating the model, or later with the add() function.
 ```python
-model = Model(input_shape=784, loss='mse',
+model = Model(input_shape=784, loss='categorical_ce',
               layers=[
                   FcLayer(100, activation='relu'),
                   FcLayer(50, activation='relu'),
