@@ -8,7 +8,9 @@ import numpy as np
 
 class Data:
     def __init__(self, train_data=(None, None), val_data=(None, None), test_data=(None, None), format_data=True,
-                 start_dim=None, end_dim=None, to_one_hot=False, val_is_test=False):
+                 start_dim=None, end_dim=None, to_one_hot=False, val_is_test=False, seed=None):
+
+        np.random.seed(seed)
 
         (self.X_train, self.Y_train) = train_data
         (self.X_val, self.Y_val) = val_data
@@ -66,7 +68,7 @@ class Data:
 
     def mini_batches(self, batch_size=64, seed=None):
         """
-        Creates a generator of random minibatches from (X_train, Y_train)
+        Creates a generator of random mini batches from (X_train, Y_train)
 
         :param batch_size: size of each mini-batch
         :param seed: seed for random shuffling the data.
@@ -77,8 +79,7 @@ class Data:
 
         m = self.X_train.shape[1]  # number of training examples
 
-        if seed is not None:
-            np.random.seed(seed)
+        np.random.seed(seed)
 
         permutation = list(np.random.permutation(m))
         shuffled_X = self.X_train[::, permutation]
