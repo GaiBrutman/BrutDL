@@ -3,11 +3,11 @@ from abc import abstractmethod, ABC
 
 class Layer(ABC):
     @abstractmethod
-    def fire(self, *args, **kwargs):
+    def forward(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def back_prop(self, *args, **kwargs):
+    def backward(self, *args, **kwargs):
         pass
 
 
@@ -22,9 +22,14 @@ class WeightedLayer(Layer):
         pass
 
     @abstractmethod
-    def fire(self, *args, **kwargs):
+    def forward(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def back_prop(self, *args, **kwargs):
+    def backward(self, *args, **kwargs):
+        pass
+
+    @property
+    @abstractmethod
+    def n_params(self):
         pass
