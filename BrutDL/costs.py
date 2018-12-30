@@ -1,5 +1,4 @@
 from abc import abstractmethod
-
 import numpy as np
 
 
@@ -44,7 +43,7 @@ class MeanSquaredError(Cost):
         :return: cost (mean of all nodes costs), (optional) cost for every output node
         """
 
-        super(MeanSquaredError, self).compute(AL, Y, get_node_cost)
+        return super(MeanSquaredError, self).compute(AL, Y, get_node_cost)
 
     def derivative(self, AL, Y):
         """
@@ -77,7 +76,7 @@ class BinaryCrossEntropy(Cost):
         :return: cost (mean of all nodes costs), (optional) cost for every output node
         """
 
-        super(BinaryCrossEntropy, self).compute(AL, Y, get_node_cost)
+        return super(BinaryCrossEntropy, self).compute(AL, Y, get_node_cost)
 
     def derivative(self, AL, Y):
         """
@@ -112,7 +111,7 @@ class CategoricalCrossEntropy(Cost):
         :return: cost (mean of all nodes costs), (optional) cost for every output node
         """
 
-        super(CategoricalCrossEntropy, self).compute(AL, Y, get_node_cost)
+        return super(CategoricalCrossEntropy, self).compute(AL, Y, get_node_cost)
 
     def derivative(self, AL, Y):
         """
