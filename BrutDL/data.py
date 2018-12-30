@@ -5,6 +5,8 @@ from typing import Iterable
 
 import numpy as np
 
+from BrutDL.print_utils import PrintUtils
+
 
 class Data:
     def __init__(self, train_data=(None, None), val_data=(None, None), test_data=(None, None), format_data=True,
@@ -105,7 +107,8 @@ class Data:
         return self.X_val, self.Y_val
 
     def __str__(self):
-        return 'Data:\n' \
-               '\tTrain: {}\n' \
-               '\tTest: {}\n' \
-               '\tValid: {}'.format(*[[x.shape for x in d] for d in (self.train_set, self.test_set, self.val_set)])
+        shape_s = '\tTrain: {}\n\tTest: {}\n\tValid: {}\n'.format(
+            *[[x.shape for x in d] for d in (self.train_set, self.test_set, self.val_set)])
+
+        return PrintUtils.hyphen_line(25) + 'Data:\n' + shape_s + PrintUtils.hyphen_line(25)
+

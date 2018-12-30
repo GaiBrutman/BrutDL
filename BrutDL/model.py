@@ -9,36 +9,7 @@ import matplotlib.pyplot as plt
 from BrutDL.data import Data
 from BrutDL.costs import Cost, COSTS
 from BrutDL.layer import Layer, WeightedLayer
-
-
-class PrintModelProgress:
-    @staticmethod
-    def line_print(*args):
-        print('\r', end='', flush=True)
-        print(''.join(args), end='', flush=True)
-
-    @staticmethod
-    def progress_str(i, iter_max=1, print_max=30):
-        progress_num = int(print_max * (i + 1) / iter_max)
-        progress_str = '[' + '=' * progress_num + '>' + ' ' * (print_max - progress_num) + ']'
-        return progress_str
-
-    @staticmethod
-    def print_progress(i, iter_max, epoch, cost, *args):
-        """
-        Prints the progress of the training in the same line.
-        :param i: current iteration
-        :param iter_max: iteration limit
-        :param epoch: current epoch
-        :param cost: cost value
-        :param args: additional arguments (Strings).
-        :return: None
-        """
-
-        progress_visual = PrintModelProgress.progress_str(i, iter_max=iter_max)
-        s = 'epoch %i ' % epoch + progress_visual + ' Cost: %f' % float(cost)
-
-        PrintModelProgress.line_print(s, *[', ' + a for a in args if a])
+from BrutDL.print_utils import PrintUtils
 
 
 class Model:
@@ -46,7 +17,7 @@ class Model:
         """
         Initialises of the class
 
-        :param input_shape: the shape of the input data
+        :param input_dim: the shape of the input data
         :param layers: list of model layers
         :param cost: the cost to use in back propagation
         """
@@ -68,8 +39,8 @@ class Model:
 
         self.__costs = []  # Keep track of cost (list of floats)
 
-        self.__last_epochs = 0  # Last number of train epochs
-        self.__last_train_size = 0  # Last number of training samples
+        self.__last_batch_size = 0  # Last number of training samples is each mini bach
+        self.__last_train_size = 0  # Last number of total training samples
         self.__last_lr = 0.  # Last training learning rate.
 
         self.__accuracies = {'Train': 0., 'Test': 0.}
@@ -110,7 +81,7 @@ class Model:
 
         # run current layer forward, Add "cache" to the "caches" list.
         for l in self.__layers:
-            A = l.fire(A)
+            A = l.forward(A)
 
         return A
 
@@ -128,7 +99,7 @@ class Model:
 
         dA = dAL
         for l in reversed(self.__layers):
-            dA = l.back_prop(dA, lr)
+            dA = l.backward(dA, lr)
 
     def train(self, data=None, train_data=(None, None), val_data=(None, None), lr=1e-3, epochs=7, batch_size=64,
               verbose=True, lr_descent=False, seed=None):
@@ -147,8 +118,7 @@ class Model:
         :return: None
         """
 
-        if seed is not None:
-            np.random.seed(seed)
+        np.random.seed(seed)
 
         assert data is not None or Data.is_valid(train_data)
 
@@ -159,8 +129,8 @@ class Model:
         assert isinstance(data, Data)
 
         self.__last_train_size = data.train_size
+        self.__last_batch_size = batch_size
         self.__last_lr = lr
-        self.__last_epochs += epochs
 
         # Loop over epochs
         for epoch in range(epochs):
@@ -168,7 +138,7 @@ class Model:
 
             batch_cost = np.zeros(data.end_dim)
             # Loop over epochs
-            for j, (min_batch_x, min_batch_y) in enumerate(data.mini_batches(batch_size)):
+            for j, (min_batch_x, min_batch_y) in enumerate(data.mini_batches(batch_size, seed=seed)):
                 # Forward propagation
                 AL = self.forward(min_batch_x)
 
@@ -181,8 +151,8 @@ class Model:
 
                 # Print the training progress
                 if verbose:
-                    PrintModelProgress.print_progress(j + 1, data.n_batches, epoch, cost,
-                                                      'Lr: %f' % lr if lr_descent else '')
+                    PrintUtils.print_progress(j + 1, data.n_batches, epoch, cost,
+                                              'Lr: %f' % lr if lr_descent else '')
 
                 if lr_descent:
                     lr = (self.__last_lr / 2.) * math.cos((j / data.n_batches) * math.pi) + (self.__last_lr / 2.)
@@ -197,9 +167,9 @@ class Model:
                 else:
                     val_cost = None
 
-                PrintModelProgress.print_progress(j + 1, data.n_batches, epoch, np.mean(batch_cost),
-                                                  'Lr: %f' % lr if lr_descent else '', 'Val Cost: %f' % val_cost
-                                                  if val_cost is not None else '')
+                PrintUtils.print_progress(j + 1, data.n_batches, epoch, np.mean(batch_cost),
+                                          'Lr: %f' % lr if lr_descent else '', 'Val Cost: %f' % val_cost
+                                          if val_cost is not None else '')
 
                 print()
 
@@ -215,12 +185,13 @@ class Model:
         pred = self.forward(Data.format_arr(X, self.__layers_dims[0]))
         return pred
 
-    def classifier_accuracy(self, dataset, type_='Test'):
+    def classifier_accuracy(self, dataset, type_='Test', verbose=True):
         """
         Calculates the accuracy of the model on given data.
 
         :param dataset: tuple of Data to be passed and labels for calculating the accuracy
         :param type_: type of data given. Used for saving the accuracy value in the right spot
+        :param verbose: whether to print the accuracy
         :return: the accuracy value of the model on the given data.
         """
 
@@ -228,18 +199,17 @@ class Model:
 
         (X, Y) = dataset
 
-        # Forward propagation
-        m = X.shape[-1]
-
         p = np.argmax(self.predict(X), axis=0)
         r = np.argmax(Y, axis=0)
 
-        print('pred:', p[:10])
-        print('true:', r[:10])
-
-        acc = float(np.sum((p == r) / m))
+        acc = float(np.mean(p == r))
         self.__accuracies[type_] = acc
-        print('{} Accuracy: {}\n'.format(type_, acc))
+
+        if verbose:
+            print('pred:', p[:10])
+            print('true:', r[:10])
+
+            print('{} Accuracy: {}\n'.format(type_, acc))
 
         return acc
 
@@ -249,25 +219,22 @@ class Model:
         :return: the plot figure
         """
 
-        title = 'layers = {}\n' \
-                '         {}\n' \
-                'size = {}, EPOCHS = {}, Learning rate = {}'.format(self.__layers_dims, self.__activations,
-                                                                    self.__last_train_size, self.__last_epochs,
-                                                                    self.__last_lr)
+        title = 'Layers: {}\n' \
+                'Activations: {}\n\n' \
+                'Size = {}, Batch Size = {}, Learning Rate = {}'.format(self.__layers_dims, self.__activations,
+                                                                        self.__last_train_size, self.__last_batch_size,
+                                                                        self.__last_lr)
 
-        plt.title(title)
-
-        m = max(self.__last_epochs / len(self.__costs), 1) if self.__last_epochs and self.__costs else 0
+        plt.title(title, pad=10)
 
         plt.plot(self.__costs)
 
         plt.ylabel('cost')
-        plt.xlabel('iterations (per {})'.format(round(m, 1)))
+        plt.xlabel('epochs')
 
-        accuracies = 'Train: {}\nTest: {}'.format(str(self.__accuracies['Train'])[:14],
-                                                  str(self.__accuracies['Test'])[:14])
+        accuracies = '\n'.join(['%s: %f' % (key, round(self.__accuracies[key], 7)) for key in ['Train', 'Test']])
 
-        plt.text(0.8, 0.9, accuracies, ha='center', va='center', transform=plt.gca().transAxes)
+        plt.text(0.65, 0.85, accuracies, ha='left', va='center', transform=plt.gca().transAxes, fontsize=13)
 
         fig = plt.gcf()
         plt.show()
@@ -282,7 +249,10 @@ class Model:
         """
 
         return dict(layers_dims=self.__layers_dims, activations=self.__activations, cost=self.__cost, lr=self.__last_lr,
-                    epoches=self.__last_epochs, accuracies=self.__accuracies)
+                    accuracies=self.__accuracies)
+
+    def describe(self):
+        print(self)
 
     def __str__(self):
         """
@@ -290,4 +260,8 @@ class Model:
         :return: the string representing the model
         """
 
-        return 'Model:\n' + '\n'.join(['\t' + str(layer) for layer in self.__layers])
+        layers_s = '\n'.join(['\t' + str(layer) for layer in self.__layers])
+        cost_s = '\n\t' + str(self.__cost)
+        params_s = '\ntotal %i Parameters\n' % sum([l.n_params for l in self.__layers if isinstance(l, WeightedLayer)])
+
+        return PrintUtils.hyphen_line(35) + 'Model:\n' + layers_s + cost_s + params_s + PrintUtils.hyphen_line(25)

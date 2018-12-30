@@ -40,11 +40,11 @@ class FcLayer(WeightedLayer):
         assert (Z.shape == (self.out_dim, prev.shape[1]))
         return Z
 
-    def fire(self, prev):
+    def forward(self, prev):
         assert self.in_dim is not None
 
         Z = self.linear_forward(prev)
-        A = self.activation.fire(Z) if self.activation else Z
+        A = self.activation.forward(Z) if self.activation else Z
 
         self.cache = (Z, prev)
 
@@ -65,10 +65,10 @@ class FcLayer(WeightedLayer):
 
         return dA_prev, dW, db
 
-    def back_prop(self, dA, lr):
+    def backward(self, dA, lr):
         (Z, A) = self.cache
 
-        dZ = self.activation.back_prop(dA, Z) if self.activation else dA
+        dZ = self.activation.backward(dA, Z) if self.activation else dA
 
         dA_prev, dW, db = self.linear_backward(dZ, A)
 
@@ -77,8 +77,13 @@ class FcLayer(WeightedLayer):
 
         return dA_prev
 
+    @property
+    def n_params(self):
+        return self.W.size + self.b.size
+
     def __str__(self):
-        s = 'Fully Connected Layer: [%i -> %i]' % (self.in_dim, self.out_dim)
+        s = 'Fully Connected Layer: [%i -> %i] (%i parameters)' % (self.in_dim, self.out_dim, self.n_params)
+
         if self.activation:
             s += '\n\t' + str(self.activation)
         return s

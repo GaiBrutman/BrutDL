@@ -8,14 +8,14 @@ class Activation(Layer):
     def __init__(self, func_name):
         super(Activation, self).__init__()
         self.func_name = func_name.lower()
-        self.cache = None
+        self.cache = None  # pre activation array from forward propagation (used for back propagation)
 
     @abstractmethod
-    def fire(self, Z):
+    def forward(self, Z):
         self.cache = Z
 
     @abstractmethod
-    def back_prop(self, dA, lr):
+    def backward(self, dA, lr):
         pass
 
     def __str__(self):
@@ -26,29 +26,30 @@ class Sigmoid(Activation):
     def __init__(self):
         super(Sigmoid, self).__init__('sigmoid')
 
-    def fire(self, Z):
+    def forward(self, Z):
         """
         Implements the SIGMOID activation in numpy
 
         :param Z: numpy array of any shape
         :return: output of sigmoid(z), same shape as Z
         """
-        super(Sigmoid, self).fire(Z)
+
+        super(Sigmoid, self).forward(Z)
 
         A = 1 / (1 + np.exp(-Z))
 
         return A
 
-    def back_prop(self, dA, lr):
+    def backward(self, dA, lr):
         """
         Implement the backward propagation for a single SIGMOID unit.
 
         :param dA: post-activation gradient, of any shape
-        :param cache: pre activation array from forward propagation
+        :param lr: learning rate
         :return: Gradient of the cost with respect to Z
         """
 
-        super(Sigmoid, self).back_prop(dA, lr)
+        super(Sigmoid, self).backward(dA, lr)
 
         Z = self.cache
 
@@ -64,29 +65,31 @@ class Softmax(Activation):
     def __init__(self):
         super(Softmax, self).__init__('softmax')
 
-    def fire(self, Z):
+    def forward(self, Z):
         """
         Implements the SOFTMAX activation in numpy
 
         :param Z: numpy array of any shape
         :return: output of softmax(z), same shape as Z
         """
-        super(Softmax, self).fire(Z)
+
+        super(Softmax, self).forward(Z)
 
         exps = np.exp(Z - np.max(Z, axis=0))
         A = exps / np.sum(exps, axis=0)
 
         return A
 
-    def back_prop(self, dA, lr):
+    def backward(self, dA, lr):
         """
-        Implement the backward propagation for a single SOFTMAX unit.
+        Implement the backward propagation for a single SOFTMAX unit.=
 
         :param dA: post-activation gradient, of any shape
-        :param cache: pre activation array from forward propagation
+        :param lr: learning rate
         :return: Gradient of the cost with respect to Z
         """
-        super(Softmax, self).back_prop(dA, lr)
+
+        super(Softmax, self).backward(dA, lr)
 
         Z = self.cache
 
@@ -102,29 +105,30 @@ class ReLU(Activation):
     def __init__(self):
         super(ReLU, self).__init__('relu')
 
-    def fire(self, Z):
+    def forward(self, Z):
         """
         Implement the RELU activation in numpy
 
         :param Z: Output of the linear layer, of any shape
         :return: output of relu(z), same shape as Z
         """
-        super(ReLU, self).fire(Z)
+
+        super(ReLU, self).forward(Z)
 
         A = np.maximum(0, Z)
 
         return A
 
-    def back_prop(self, dA, lr):
+    def backward(self, dA, lr):
         """
         Implement the backward propagation for a single RELU unit.
 
         :param dA: post-activation gradient, of any shape
-        :param cache: pre activation array from forward propagation
+        :param lr: learning rate
         :return: Gradient of the cost with respect to Z
         """
 
-        super(ReLU, self).back_prop(dA, lr)
+        super(ReLU, self).backward(dA, lr)
 
         Z = self.cache
         dZ = np.array(dA, copy=True)  # just converting dz to a correct object.
@@ -141,7 +145,7 @@ class LeakyReLU(Activation):
     def __init__(self):
         super(LeakyReLU, self).__init__('leaky_relu')
 
-    def fire(self, Z):
+    def forward(self, Z):
         """
         Implement the LEAKY RELU activation in numpy
 
@@ -149,22 +153,22 @@ class LeakyReLU(Activation):
         :return: output of leaky_relu(z), same shape as Z
         """
 
-        super(LeakyReLU, self).fire(Z)
+        super(LeakyReLU, self).forward(Z)
 
         A = np.maximum(Z, 0.01 * Z)
 
         return A
 
-    def back_prop(self, dA, lr):
+    def backward(self, dA, lr):
         """
         Implement the backward propagation for a single LEAKY RELU unit.
 
         :param dA: post-activation gradient, of any shape
-        :param cache: pre activation array from forward propagation
+        :param lr: learning rate
         :return: Gradient of the cost with respect to Z
         """
 
-        super(LeakyReLU, self).back_prop(dA, lr)
+        super(LeakyReLU, self).backward(dA, lr)
 
         Z = self.cache
         dZ = np.array(dA, copy=True)  # just converting dz to a correct object.
